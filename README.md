@@ -33,14 +33,15 @@
          "application_name": "my-app-sdc",
          "application_env": "dev",
          "git_org": "amoltatkare",
-         "AWS_ACCESS_KEY_ID":"<access ID>",
-         "AWS_SECRET_ACCESS_KEY":"<access Key>",
-         
+         "AWS_ACCESS_KEY_ID":"<>",
+         "AWS_SECRET_ACCESS_KEY":"<>",
+	       "s3_backend_bucket":"markiv-terraform-states",
+         "PULUMI_CONFIG_PASSPHRASE":"<>",
          "security_groups":[
-            ""
+            "sg-<>"
          ],
          "subnets":[
-            ""
+            "subnet-<>"
          ],
          "ami":{
             "redhat8-linux": "ami-06640050dc3f556bb",
@@ -80,7 +81,7 @@ Add below message in SQS queue to trigger terraform apply for project-1
                "id": "s3-0001",
                "provider": "aws",
                "iacprovider": "terraform",
-               "command" : "apply",
+               "command" : "apply/destroy",
                "resource_type": "s3",
                "config": {
                   "aws_region":"us-east-1",
@@ -92,7 +93,7 @@ Add below message in SQS queue to trigger terraform apply for project-1
                "id": "ec2-0001",
                "provider": "aws",
                "iacprovider": "terraform",
-               "command" : "apply",
+               "command" : "apply/destroy",
                "resource_type": "ec2",
                "config": {
                   "name": "my-app-sdc-dev-ec2-0001",
@@ -101,10 +102,22 @@ Add below message in SQS queue to trigger terraform apply for project-1
                }
             },
             {
+               "id": "s3-0001",
+               "provider": "aws",
+               "iacprovider": "pulumi",
+               "command" : "up/destroy",
+               "resource_type": "s3",
+               "config": {
+                  "aws_region":"us-east-1",
+                  "bucket_name":"my-app-sdc-dev-s3-0001",
+                  "acl":"public-read"
+               }
+            },
+            {
                "id": "ec2-0002",
                "provider": "aws",
                "iacprovider": "pulumi",
-               "command" : "apply",
+               "command" : "up/destroy", 
                "resource_type": "ec2",
                "config": {
                   "name": "my-app-sdc-dev-ec2-0002",
@@ -120,5 +133,6 @@ Add below message in SQS queue to trigger terraform apply for project-1
 ## Template terraform repos:
 - s3: https://github.com/amoltatkare/aws-s3-terraform
 - ec2: https://github.com/amoltatkare/aws-ec2-terraform
+- s3: https://github.com/amoltatkare/aws-s3-pumumi
 - ec2: https://github.com/amoltatkare/aws-ec2-pumumi
 
