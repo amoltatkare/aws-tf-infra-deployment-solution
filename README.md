@@ -86,7 +86,7 @@ Add below message in SQS queue to trigger terraform apply for project-1
                "config": {
                   "aws_region":"us-east-1",
                   "bucket_name":"my-app-sdc-dev-s3-0001",
-                  "acl":"public-read"
+                  "acl":"private"
                }
             },
             {
@@ -110,7 +110,7 @@ Add below message in SQS queue to trigger terraform apply for project-1
                "config": {
                   "aws_region":"us-east-1",
                   "bucket_name":"my-app-sdc-dev-s3-0001",
-                  "acl":"public-read"
+                  "acl":"private"
                }
             },
             {
