@@ -199,6 +199,11 @@ resource "aws_ecr_repository" "tf_task" {
   name = "tf-task"
 }
 
+# ECR repository #added on 14aug
+resource "aws_ecr_repository" "pulumi_task" {
+  name = "pulumi-task"
+} #added on 14aug
+
 # ECS Cluster
 resource "aws_ecs_cluster" "ecs_cluster" {
   name = "tf-provisioning"
@@ -231,9 +236,40 @@ resource "aws_ecs_task_definition" "task_definition" {
           awslogs-stream-prefix = "ecs"
         }
       }
-    },
+    }
   ])
 }
+
+# ECS Pulumi task definition #added on 14aug
+resource "aws_ecs_task_definition" "pulumi_task_definition" {
+  family                   = "pulumi-deployment-task-def"
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = 256
+  memory                   = 512
+  container_definitions = jsonencode([
+    {
+      name      = "pulumi-deployment-task"
+      image     = "${local.account_id}.dkr.ecr.${local.region}.amazonaws.com/pulumi-task:latest"
+      essential = true
+      portMappings = [
+        {
+          containerPort = 80
+          hostPort      = 80
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = "/ecs/tf-deployment-task-def"
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "ecs"
+        }
+      }
+    }
+  ])
+} #added on 14aug
 
 resource "aws_cloudwatch_log_group" "lg" {
   name = "/ecs/tf-deployment-task-def"

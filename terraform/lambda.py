@@ -13,6 +13,7 @@ def get_resource_config(type, config, app_config, app_env):
     elif type == "ec2":
         app_os = resource_config["os"]
         return {
+            "name":resource_config["name"],
             "ami":app_config["ami"][app_os],
             "instance_type":resource_config["instance_type"],
             "security_group":app_config["security_groups"][0],
@@ -54,6 +55,14 @@ def handler(event, context):
             backend_s3_key = f"{app_name}-{app_env}-{resource_type}-{id}/terraform.tfstate"
             resource_config = get_resource_config(resource_type, resource, app_config, app_env)
 
+            if iacprovider == "pulumi":
+                taskdef = "pulumi-deployment-task-def"
+                taskname = "pulumi-deployment-task"
+
+            if iacprovider == "terraform":
+                taskdef = "tf-deployment-task-def"
+                taskname = "tf-deployment-task"
+
             ecs.run_task(
                 cluster='tf-provisioning',
                 count=1,
@@ -69,7 +78,7 @@ def handler(event, context):
                 overrides={
                     'containerOverrides': [
                         {
-                            'name': 'tf-deployment-task',
+                            'name': taskname,
                             'environment': [
                                 {
                                     'name': 'AWS_ACCESS_KEY_ID',
@@ -78,6 +87,10 @@ def handler(event, context):
                                 {
                                     'name': 'AWS_SECRET_ACCESS_KEY',
                                     'value': app_config["AWS_SECRET_ACCESS_KEY"]
+                                },
+                                {
+                                    'name': 'PULUMI_CONFIG_PASSPHRASE',
+                                    'value': app_config["PULUMI_CONFIG_PASSPHRASE"] 
                                 },
                                 {
                                     'name': 'COMMAND',
@@ -119,5 +132,5 @@ def handler(event, context):
                         },
                     ]
                 },
-                taskDefinition='tf-deployment-task-def'
+                taskDefinition=taskdef
             )
