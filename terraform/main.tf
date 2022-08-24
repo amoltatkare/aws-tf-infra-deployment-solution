@@ -56,11 +56,40 @@ resource "aws_iam_role" "iam_for_lambda" {
             "ssm:GetParameters",
             "sqs:ReceiveMessage",
             "sqs:DeleteMessage",
-            "sqs:GetQueueAttributes"
+            "sqs:GetQueueAttributes",
           ]
           Effect   = "Allow"
           Resource = "*"
         },
+        {
+            "Sid": "ListAndDescribe",
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:List*",
+                "dynamodb:DescribeReservedCapacity*",
+                "dynamodb:DescribeLimits",
+                "dynamodb:DescribeTimeToLive"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "SpecificTable",
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:BatchGet*",
+                "dynamodb:DescribeStream",
+                "dynamodb:DescribeTable",
+                "dynamodb:Get*",
+                "dynamodb:Query",
+                "dynamodb:Scan",
+                "dynamodb:BatchWrite*",
+                "dynamodb:CreateTable",
+                "dynamodb:Delete*",
+                "dynamodb:Update*",
+                "dynamodb:PutItem"
+            ],
+            "Resource": "arn:aws:dynamodb:*:*:table/markiv-resources"
+        }
       ]
     })
   }
@@ -273,4 +302,36 @@ resource "aws_ecs_task_definition" "pulumi_task_definition" {
 
 resource "aws_cloudwatch_log_group" "lg" {
   name = "/ecs/tf-deployment-task-def"
+}
+
+resource "aws_dynamodb_table" "markiv-requests" {
+  name         = "markiv-requests"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "request_uuid"
+  range_key    = "request_id"
+
+  attribute {
+    name = "request_uuid"
+    type = "S"
+  }
+  attribute {
+    name = "request_id"
+    type = "S"
+  }
+ }
+
+resource "aws_dynamodb_table" "markiv-resources" {
+  name         = "markiv-resources"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "resource_uuid"
+  range_key    = "resource_id"
+
+  attribute {
+    name = "resource_uuid"
+    type = "S"
+  }
+  attribute {
+    name = "resource_id"
+    type = "S"
+  }
 }
