@@ -1,9 +1,13 @@
 import json
 import boto3
 from pprint import pprint
+import uuid
+from boto3.dynamodb.conditions import Key, Attr
 
 ecs = boto3.client('ecs')
 ssm = boto3.client('ssm')
+dynamodb = boto3.resource('dynamodb')
+
 
 def get_resource_config(type, config, app_config, app_env):
     """Get resource config based on resource type."""
@@ -13,9 +17,11 @@ def get_resource_config(type, config, app_config, app_env):
     elif type == "ec2":
         app_os = resource_config["os"]
         return {
-            "name":resource_config["name"],
+            #"name":resource_config["name"], #is it is required
             "ami":app_config["ami"][app_os],
+            #"os":app_os, #is it is required
             "instance_type":resource_config["instance_type"],
+            #"instance_id":resource_config["instance_id"], #is it is required
             "security_group":app_config["security_groups"][0],
             "subnet_id":app_config["subnets"][0],
             "resource_tags":{
@@ -48,12 +54,78 @@ def handler(event, context):
             iacprovider = resource["iacprovider"] #terraform or pulumi or ...
             command = resource["command"] # in case of terraform use apply/destroy or for pulumi use up/destroy
             id = resource["id"]
+            instance_id =  resource["config"]["instance_id"]
 
             git_repo = f"{provider}-{resource_type}-{iacprovider}"
             git_org = app_config["git_org"]
 
             backend_s3_key = f"{app_name}-{app_env}-{resource_type}-{id}/terraform.tfstate"
             resource_config = get_resource_config(resource_type, resource, app_config, app_env)
+
+            #temporary added resource addition code here
+            table = dynamodb.Table('markiv-resources')
+            response = table.scan(FilterExpression=Attr("resource_id").eq(id))
+            items = response['Items']
+
+            #if command = 'apply' 
+            if command == 'apply':
+                #if id is present then update else create
+                
+                if len(items) == 0:
+                    #add new resurce
+                    resource_uuid = str(uuid.uuid4())
+                    response = table.put_item(
+                        Item={
+                            'resource_uuid': resource_uuid,
+                            'resource_id': id,
+                            'resource_payload': resource_config
+                        }
+                    )
+                else:
+                    #update config
+                    resource_uuid = items[0]['resource_uuid']
+                    print (resource_uuid)
+                    response = table.update_item(
+                        Key={
+                            'resource_id': id,
+                            'resource_uuid': resource_uuid
+                        },
+                        #UpdateExpression="set resource_payload.instance_type = :instance, resource_payload.os = :os, resource_payload.ami = :ami",
+                        UpdateExpression="set resource_payload.instance_type = :instance, resource_payload.ami = :ami",
+                        ExpressionAttributeValues={
+                                ':instance': resource_config['instance_type'],
+                                #':os': resource_config['os'],
+                                ':ami': resource_config['ami']   
+                        },
+                        ReturnValues="UPDATED_NEW"
+                    )
+
+            if command == 'destroy':
+                if(len(items) > 0):
+                    resource_uuid = items[0]['resource_uuid']
+                    print (resource_uuid)
+                    response = table.delete_item(
+                        Key={
+                            'resource_id': id,
+                            'resource_uuid': resource_uuid
+                        }
+                    )
+
+            if command == 'import':
+                if len(items) == 0:
+                    #add new resurce
+                    resource_uuid = str(uuid.uuid4())
+                    response = table.put_item(
+                        Item={
+                            'resource_uuid': resource_uuid,
+                            'resource_id': id,
+                            'resource_payload': resource_config
+                        }
+                    )
+
+            status_code = response['ResponseMetadata']['HTTPStatusCode']
+            print(status_code)
+            #temporary added resource addition code here
 
             if iacprovider == "pulumi":
                 taskdef = "pulumi-deployment-task-def"
@@ -119,6 +191,10 @@ def handler(event, context):
                                 {
                                     'name': 'RESOURCE_CONFIG',
                                     'value': json.dumps(resource_config)
+                                },
+                                {
+                                    'name': 'INSTANCE_ID',
+                                    'value': instance_id 
                                 },
                                 {
                                     'name': 'GIT_ORG',
