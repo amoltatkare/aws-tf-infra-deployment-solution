@@ -25,7 +25,21 @@ then
     echo "Terraform init"
     terraform init --backend-config="bucket=${BACKEND_BUCKET}" --backend-config="key=${BACKEND_S3_KEY}"
     
-    echo "Terraform ${COMMAND}"
-    terraform ${COMMAND} -auto-approve
-fi
+    if [ ${COMMAND} == 'apply' ]
+    then
+        echo "Terraform ${COMMAND}"
+        terraform ${COMMAND} -auto-approve
+    fi
 
+    if [ ${COMMAND} == 'destroy' ]
+    then
+        echo "Terraform ${COMMAND}"
+        terraform ${COMMAND} -auto-approve
+    fi
+
+    if [ ${COMMAND} == 'import' ]
+    then
+        echo "Terraform ${COMMAND} aws_instance.tf_ec2 ${INSTANCE_ID}"
+        terraform ${COMMAND} aws_instance.tf_ec2 ${INSTANCE_ID}
+    fi
+fi
