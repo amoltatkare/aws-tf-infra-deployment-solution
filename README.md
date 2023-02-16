@@ -35,7 +35,7 @@
          "git_org": "amoltatkare",
          "AWS_ACCESS_KEY_ID":"<>",
          "AWS_SECRET_ACCESS_KEY":"<>",
-	       "s3_backend_bucket":"markiv-terraform-states",
+	       "s3_backend_bucket":"terraform-states",
          "PULUMI_CONFIG_PASSPHRASE":"<>",
          "security_groups":[
             "sg-<>"
@@ -44,10 +44,10 @@
             "subnet-<>"
          ],
          "ami":{
-            "redhat8-linux": "ami-06640050dc3f556bb",
-            "windows19": "ami-05912b6333beaa478",
-            "windows22": "ami-027f2f92dac883acf",
-            "amazon-linux2": "ami-090fa75af13c156b4"
+            "redhat8-linux": "ami-<>",
+            "windows19": "ami-<>",
+            "windows22": "ami-<>",
+            "amazon-linux2": "ami-<>"
          }
       }
    }
